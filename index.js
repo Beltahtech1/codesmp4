@@ -10,56 +10,7 @@ const startTime = Date.now();
 let aiStatus = false;
 
 app.get('/', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>WhatsApp Bot Linker</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
-                .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-                input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-                button { width: 100%; padding: 12px; background: #25D366; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
-                #codeDisplay { margin-top: 20px; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #075E54; background: #e3f2fd; padding: 10px; border-radius: 5px; display: none; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h2>Link WhatsApp Bot</h2>
-                <p>Enter your phone number with country code (e.g., 254712345678) to get your linking code.</p>
-                <input type="text" id="phoneNumber" placeholder="254712345678">
-                <button onclick="getCode()">Generate Code</button>
-                <div id="codeDisplay"></div>
-            </div>
-            <script>
-                async function getCode() {
-                    const num = document.getElementById('phoneNumber').value.trim();
-                    if (!num) return alert('Please enter a valid number');
-                    const btn = document.querySelector('button');
-                    const display = document.getElementById('codeDisplay');
-                    btn.innerText = 'Generating...';
-                    display.style.display = 'none';
-                    try {
-                        const res = await fetch('/get-code?num=' + num);
-                        const data = await res.json();
-                        if (data.code) {
-                            display.innerText = data.code;
-                            display.style.display = 'block';
-                            btn.innerText = 'Generate Code';
-                        } else {
-                            alert(data.error || 'Failed to get code');
-                            btn.innerText = 'Generate Code';
-                        }
-                    } catch (err) {
-                        alert('Error connecting to server');
-                        btn.innerText = 'Generate Code';
-                    }
-                }
-            </script>
-        </body>
-        </html>
-    `);
+    res.sendFile(__dirname + '/public/index.html');
 });
 
 app.get('/get-code', async (req, res) => {
@@ -68,7 +19,8 @@ app.get('/get-code', async (req, res) => {
     phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
 
     try {
-        const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+        // Use persistent disk path on Render
+        const { state, saveCreds } = await useMultiFileAuthState('/opt/render/project/auth_info_baileys');
         const sock = makeWASocket({ auth: state, printQRInTerminal: false });
 
         sock.ev.on('creds.update', saveCreds);
@@ -117,7 +69,6 @@ function getLocalResponse(incomingText) {
         return "Feel free to leave your message here. My owner will see it when they are online!";
     }
 
-    // Default fallback text response
     return "🤖 *Auto-Response Mode*:\n\nThanks for your message! My owner is currently away, but your message has been received.";
 }
 
@@ -195,7 +146,6 @@ function handleBotFeatures(sock) {
             }
         }
 
-        // Handle local response system for incoming private messages
         if (aiStatus && !isGroup && text && !text.startsWith(prefix)) {
             const botReply = getLocalResponse(text);
             await sock.sendMessage(from, { text: botReply }, { quoted: msg });
