@@ -1,5 +1,4 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, delay } = require('@whiskeysockets/baileys');
-const { GoogleGenAI } = require('@google/genai');
 const express = require('express');
 const app = express();
 
@@ -7,13 +6,9 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const startTime = Date.now();
 
-// Initialize the Google Gen AI client (ensure GEMINI_API_KEY is set in Render Env Variables)
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-// Track AI state globally for private messages
+// Track AI auto-reply state globally
 let aiStatus = false;
 
-// HTML frontend remains identical
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -105,6 +100,27 @@ function formatRuntime(ms) {
     return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
+// Built-in Smart Local Responder Logic
+function getLocalResponse(incomingText) {
+    const cleanText = incomingText.toLowerCase().trim();
+
+    if (cleanText.includes('hi') || cleanText.includes('hello') || cleanText.includes('hey')) {
+        return "Hello! 👋 I am an automated assistant. How can I help you today?";
+    }
+    if (cleanText.includes('how are you')) {
+        return "I'm running perfectly 24/7 on Render! Thank you for asking. 🚀";
+    }
+    if (cleanText.includes('owner') || cleanText.includes('creator')) {
+        return "This bot was generated via Mini-Beltah customization.";
+    }
+    if (cleanText.includes('help')) {
+        return "Feel free to leave your message here. My owner will see it when they are online!";
+    }
+
+    // Default fallback text response
+    return "🤖 *Auto-Response Mode*:\n\nThanks for your message! My owner is currently away, but your message has been received.";
+}
+
 function handleBotFeatures(sock) {
     sock.ev.on('messages.upsert', async m => {
         const msg = m.messages[0];
@@ -116,7 +132,6 @@ function handleBotFeatures(sock) {
 
         const prefix = ".";
         
-        // Handle Commands if prefixed
         if (text.startsWith(prefix)) {
             const args = text.slice(prefix.length).trim().split(/ +/);
             const command = args.shift().toLowerCase();
@@ -131,26 +146,24 @@ function handleBotFeatures(sock) {
                 second: '2-digit' 
             });
 
-            // MENU COMMAND
             if (command === 'menu') {
                 const menuText = `*🤖 MINI-BELTAH BOT MENU*
 
 👤 *User:* ${senderName}
 🕒 *Time:* ${eatTime} EAT
-🤖 *AI Chat:* ${aiStatus ? '✅ ON' : '❌ OFF'}
+🤖 *Auto-Reply:* ${aiStatus ? '✅ ON' : '❌ OFF'}
 
 📌 *Available Commands:*
 • \`.menu\` - Show this configuration panel
 • \`.ping\` - Test processing speed performance
 • \`.runtime\` - Check active runtime metrics
-• \`.ai on\` - Enable automated AI private replies
-• \`.ai off\` - Disable automated AI private replies`;
+• \`.ai on\` - Enable automated private replies
+• \`.ai off\` - Disable automated private replies`;
                 
                 await sock.sendMessage(from, { text: menuText }, { quoted: msg });
                 return;
             }
 
-            // PING COMMAND
             if (command === 'ping') {
                 const startPing = Date.now();
                 await sock.sendMessage(from, { text: 'Evaluating link latency...' }, { quoted: msg });
@@ -161,22 +174,20 @@ function handleBotFeatures(sock) {
                 return;
             }
 
-            // RUNTIME COMMAND
             if (command === 'runtime') {
                 const currentRuntime = Date.now() - startTime;
                 await sock.sendMessage(from, { text: `🕒 *System Status Runtime:* ${formatRuntime(currentRuntime)}` }, { quoted: msg });
                 return;
             }
 
-            // AI CONFIGURATION COMMAND
             if (command === 'ai') {
                 const targetState = args[0]?.toLowerCase();
                 if (targetState === 'on') {
                     aiStatus = true;
-                    await sock.sendMessage(from, { text: '🤖 *AI private auto-replies have been ENABLED.*' }, { quoted: msg });
+                    await sock.sendMessage(from, { text: '🤖 *Automated private replies have been ENABLED.*' }, { quoted: msg });
                 } else if (targetState === 'off') {
                     aiStatus = false;
-                    await sock.sendMessage(from, { text: '🤖 *AI private auto-replies have been DISABLED.*' }, { quoted: msg });
+                    await sock.sendMessage(from, { text: '🤖 *Automated private replies have been DISABLED.*' }, { quoted: msg });
                 } else {
                     await sock.sendMessage(from, { text: '⚠️ *Invalid format.* Use `.ai on` or `.ai off`' }, { quoted: msg });
                 }
@@ -184,21 +195,10 @@ function handleBotFeatures(sock) {
             }
         }
 
-        // Handle Automated AI responses for non-command Private Messages
+        // Handle local response system for incoming private messages
         if (aiStatus && !isGroup && text && !text.startsWith(prefix)) {
-            try {
-                // Generate content using the recommended flash model
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: text,
-                });
-                
-                if (response.text) {
-                    await sock.sendMessage(from, { text: response.text }, { quoted: msg });
-                }
-            } catch (err) {
-                console.error('Gemini Execution Error:', err);
-            }
+            const botReply = getLocalResponse(text);
+            await sock.sendMessage(from, { text: botReply }, { quoted: msg });
         }
     });
 }
