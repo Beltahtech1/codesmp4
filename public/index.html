@@ -1,28 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>WhatsApp Bot Linker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
-    .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-    input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-    button { width: 100%; padding: 12px; background: #25D366; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
-    #codeDisplay { margin-top: 20px; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #075E54; background: #e3f2fd; padding: 10px; border-radius: 5px; display: none; }
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #25D366, #075E54);
+    }
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      animation: fadeIn 0.6s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .logo {
+      width: 60px;
+      margin-bottom: 15px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      text-align: center;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #25D366;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #128C7E;
+    }
+    #codeDisplay {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #075E54;
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="card">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Logo" class="logo">
     <h2>Link WhatsApp Bot</h2>
-    <p>Enter your phone number with country code (e.g., 254712345678) to get your linking code.</p>
-    <input type="text" id="phoneNumber" placeholder="254712345678">
+    <p>Enter your phone number in international format (e.g., 254712345678).</p>
+    <input type="text" id="phoneNumber" placeholder="254712345678" maxlength="15">
     <button onclick="getCode()">Generate Code</button>
     <div id="codeDisplay"></div>
   </div>
   <script>
     async function getCode() {
       const num = document.getElementById('phoneNumber').value.trim();
-      if (!num) return alert('Please enter a valid number');
+      if (!/^[1-9][0-9]{7,14}$/.test(num)) {
+        return alert('Please enter a valid international number (no +, only digits).');
+      }
       const btn = document.querySelector('button');
       const display = document.getElementById('codeDisplay');
       btn.innerText = 'Generating...';
