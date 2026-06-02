@@ -1,0 +1,19 @@
+{
+  "name": "whatsapp-ai-pairing-bot",
+  "version": "1.0.0",
+  "description": "A WhatsApp automation bot with a web configuration pairing system and Gemini AI integration",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^0.1.1",
+    "@whiskeysockets/baileys": "^6.6.0",
+    "express": "^4.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
